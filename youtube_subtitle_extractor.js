@@ -1,7 +1,10 @@
 const ytdl = require("ytdl-core");
 const axios = require("axios");
-const fs = require("fs");
+const fs = require("fs").promises;
+const path = require("path");
+const os = require("os");
 const { DOMParser } = require("xmldom");
+const crypto = require("crypto");
 
 async function getSubtitles(videoUrl) {
   try {
@@ -13,39 +16,39 @@ async function getSubtitles(videoUrl) {
       info.player_response.captions?.playerCaptionsTracklistRenderer
         ?.captionTracks;
     if (!tracks || tracks.length === 0) {
-      console.log("这个视频没有可用的字幕");
-      return;
+      throw new Error("这个视频没有可用的字幕");
     }
 
-    // 默认使用第一个可用的字幕轨道
-    const track = tracks[0];
+    // 查找英文字幕轨道
+    const englishTrack = tracks.find(track => track.languageCode === 'en');
+    if (!englishTrack) {
+      throw new Error("这个视频没有可用的英文字幕");
+    }
 
-    // 下载字幕文件
-    const { data } = await axios.get(track.baseUrl);
+    // 下载英文字幕文件
+    const { data } = await axios.get(englishTrack.baseUrl);
 
     if (!data) {
-      console.log("无法获取字幕数据");
-      return;
+      throw new Error("无法获取英文字幕数据");
     }
-
-    console.log("原始字幕数据的前1000个字符：", data.substring(0, 1000));
 
     // 将字幕内容解析为 SRT 格式
     const srtContent = parseCaptionsToSRT(data);
 
-    console.log(
-      "解析后的SRT内容的前1000个字符：",
-      srtContent.substring(0, 1000)
-    );
+    // 创建临时文件
+    const tempDir = os.tmpdir();
+    const tempFileName = `subtitles_en_${crypto.randomBytes(16).toString("hex")}.srt`;
+    const tempFilePath = path.join(tempDir, tempFileName);
 
-    // 将 SRT 内容写入文件
-    const filename = `subtitles_${info.videoDetails.videoId}.srt`;
-    fs.writeFileSync(filename, srtContent);
+    // 将 SRT 内容写入临时文件
+    await fs.writeFile(tempFilePath, srtContent);
 
-    console.log(`字幕已保存到文件: ${filename}`);
+    console.log(`英文字幕已保存到临时文件: ${tempFilePath}`);
+
+    return { srtContent, tempFilePath };
   } catch (error) {
-    console.error("获取字幕时出错:", error.message);
-    console.error("错误堆栈:", error.stack);
+    console.error("获取英文字幕时出错:", error.message);
+    throw error;
   }
 }
 
@@ -92,6 +95,4 @@ function decodeHTML(html) {
     .replace(/&apos;/g, "'");
 }
 
-// 使用示例
-const videoUrl = "https://youtu.be/Jd10x8LiuBc?si=8qC37i-cJjA2L9Ch";
-getSubtitles(videoUrl);
+module.exports = { getSubtitles };

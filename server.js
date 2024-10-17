@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const { getSubtitles } = require("./subtitleExtractor");
+const fs = require("fs").promises;
+const { getSubtitles } = require("./youtube_subtitle_extractor");
 
 const app = express();
 const port = 3000;
@@ -16,8 +17,18 @@ app.post("/extract-subtitles", async (req, res) => {
   }
 
   try {
-    const subtitles = await getSubtitles(videoUrl);
-    res.json({ subtitles });
+    const { srtContent, tempFilePath } = await getSubtitles(videoUrl);
+    res.json({ subtitles: srtContent, filePath: tempFilePath });
+
+    // 在响应发送后删除临时文件
+    res.on('finish', async () => {
+      try {
+        await fs.unlink(tempFilePath);
+        console.log(`临时文件已删除: ${tempFilePath}`);
+      } catch (error) {
+        console.error(`删除临时文件时出错: ${error.message}`);
+      }
+    });
   } catch (error) {
     console.error("获取字幕时出错:", error.message);
     res.status(500).json({ error: "获取字幕时出错" });

@@ -32,32 +32,54 @@ async function getSubtitles(videoUrl) {
       throw new Error("无法获取英文字幕数据");
     }
 
-    // 将字幕内容解析为 SRT 格式
-    const srtContent = parseCaptionsToSRT(data);
+    // 将字幕内容解析为新的格式
+    const parsedSubtitles = parseCaptionsToArray(data);
 
     // 创建临时文件
     const tempDir = os.tmpdir();
-    const tempFileName = `subtitles_en_${crypto.randomBytes(16).toString("hex")}.srt`;
+    const tempFileName = `subtitles_en_${crypto.randomBytes(16).toString("hex")}.json`;
     const tempFilePath = path.join(tempDir, tempFileName);
 
-    // 将 SRT 内容写入临时文件
-    await fs.writeFile(tempFilePath, srtContent);
+    // 将解析后的字幕内容写入临时文件
+    await fs.writeFile(tempFilePath, JSON.stringify(parsedSubtitles));
 
-    console.log(`英文字幕已保存到临时文件: ${tempFilePath}`);
+    console.log(`解析后的英文字幕已保存到临时文件: ${tempFilePath}`);
 
-    return { srtContent, tempFilePath };
+    return { parsedSubtitles, tempFilePath };
   } catch (error) {
     console.error("获取英文字幕时出错:", error.message);
     throw error;
   }
 }
 
-function parseCaptionsToSRT(captionsXml) {
+/*
+[
+  {
+    start: 0.485,
+    end: 5.297,
+    originText: "MR. TRASK: I'm going to recommend to the disciplinary committee"
+    translatedText: "" // 初始化为空字符串，后续会填充翻译
+  },
+  {
+    start: 5.297,
+    end: 7.878,
+    originText: "that you be expelled, Mr. Simms."
+    translatedText: ""
+  },
+  {
+    start: 7.878,
+    end: 11.666,
+    originText: "You are a cover-up artist and you are a liar."
+    translatedText: ""
+  },
+  // ... 
+]
+*/
+function parseCaptionsToArray(captionsXml) {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(captionsXml, "text/xml");
   const textElements = xmlDoc.getElementsByTagName("text");
-  let srt = "";
-  let subtitleIndex = 1;
+  const subtitles = [];
 
   for (let i = 0; i < textElements.length; i++) {
     const text = textElements[i];
@@ -66,23 +88,16 @@ function parseCaptionsToSRT(captionsXml) {
     const content = text.textContent.trim();
 
     if (content) {
-      srt += `${subtitleIndex}\n`;
-      srt += `${formatTime(start)} --> ${formatTime(start + dur)}\n`;
-      srt += `${decodeHTML(content)}\n\n`;
-      subtitleIndex++;
+      subtitles.push({
+        start: start,
+        end: start + dur,
+        originText: decodeHTML(content),
+        translatedText: '' // 初始化为空字符串，后续会填充翻译
+      });
     }
   }
 
-  return srt;
-}
-
-function formatTime(seconds) {
-  const date = new Date(seconds * 1000);
-  const hh = String(date.getUTCHours()).padStart(2, "0");
-  const mm = String(date.getUTCMinutes()).padStart(2, "0");
-  const ss = String(date.getUTCSeconds()).padStart(2, "0");
-  const ms = String(date.getUTCMilliseconds()).padStart(3, "0");
-  return `${hh}:${mm}:${ss},${ms}`;
+  return subtitles;
 }
 
 function decodeHTML(html) {

@@ -1,10 +1,9 @@
 require('dotenv').config();
+const ytdl = require("ytdl-core");
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs").promises;
 const { getSubtitles } = require("./services/youtube_subtitle_extractor");
-console.log("getSubtitles type:", typeof getSubtitles);
-console.log("getSubtitles:", getSubtitles);
 const { translateSubtitles } = require("./services/translate_services");
 
 const app = express();
@@ -21,12 +20,23 @@ app.post("/extract-and-translate-subtitles", async (req, res) => {
   }
 
   try {
-    const { parsedSubtitles, tempFilePath } = await getSubtitles(videoUrl);
+    const info = await ytdl.getInfo(videoUrl);
+    const videoTitle = info.videoDetails.title;
+    const videoDescription = info.videoDetails.description;
+    const { parsedSubtitles, tempFilePath } = await getSubtitles(info);
     
-    // 翻译字幕
-    const translatedSubtitles = await translateSubtitles(parsedSubtitles, targetLanguage);
+    // 翻译字幕，传入视频标题和描述
+    const translatedSubtitles = await translateSubtitles(parsedSubtitles, targetLanguage, videoTitle, videoDescription);
 
-    res.json({ subtitles: translatedSubtitles, filePath: tempFilePath });
+    res.json(
+      { 
+        subtitles: translatedSubtitles,
+        metadata: {
+          videoTitle,
+          videoDescription
+        }
+      }
+    );
 
     // 在响应发送后删除临时文件
     res.on('finish', async () => {

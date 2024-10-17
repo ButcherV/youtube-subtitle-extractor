@@ -1,13 +1,21 @@
 const axios = require('axios');
 
 const API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
-const API_KEY = process.env.OPENAI_API_KEY; // 注意这里改成了 OPENAI_API_KEY
+const API_KEY = process.env.OPENAI_API_KEY;
 const MAX_CONCURRENT_REQUESTS = 20; // 最大并发请求数
 
 // 内存缓存
 const translationCache = new Map();
 
-async function translateTextWithGPT(text, targetLanguage = 'zh') {
+async function translateTextWithGPT(
+  text, 
+  targetLanguage = 'zh', 
+  videoTitle, 
+  videoDescription
+) {
+  console.log('videoTitle_translate', videoTitle)
+  console.log('videoDescription_translate', videoDescription)
+
   if (translationCache.has(text)) {
     return translationCache.get(text);
   }
@@ -16,7 +24,10 @@ async function translateTextWithGPT(text, targetLanguage = 'zh') {
     const response = await axios.post(API_ENDPOINT, {
       model: "gpt-3.5-turbo",
       messages: [
-        {role: "system", content: `You are a translator. Translate the following text to ${targetLanguage}.`},
+        {
+          role: "system", 
+          content: `You are a translator. You are translating subtitles for a video titled "${videoTitle}". The video description is: "${videoDescription}". Translate the following text to ${targetLanguage}, keeping the context of the video in mind.`
+        },
         {role: "user", content: text}
       ],
       temperature: 0.3,

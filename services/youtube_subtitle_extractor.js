@@ -1,4 +1,3 @@
-const ytdl = require("ytdl-core");
 const axios = require("axios");
 const fs = require("fs").promises;
 const path = require("path");
@@ -6,10 +5,10 @@ const os = require("os");
 const { DOMParser } = require("xmldom");
 const crypto = require("crypto");
 
-async function getSubtitles(videoUrl) {
+async function getSubtitles(info) {
   try {
     // 获取视频信息
-    const info = await ytdl.getInfo(videoUrl);
+    // const info = await ytdl.getInfo(videoUrl);
 
     // 找到字幕轨道
     const tracks =

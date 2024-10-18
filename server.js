@@ -5,6 +5,7 @@ const cors = require("cors");
 const fs = require("fs").promises;
 const { getSubtitles } = require("./services/youtube_subtitle_extractor");
 const { translateSubtitles } = require("./services/translate_services");
+const { analyzeGrammar } = require("./services/grammar_analysis");
 
 const app = express();
 const port = 3000;
@@ -12,6 +13,7 @@ const port = 3000;
 app.use(express.json());
 app.use(cors());
 
+// 提取并翻译字幕 API 端点
 app.post("/extract-and-translate-subtitles", async (req, res) => {
   const { videoUrl, targetLanguage = 'zh' } = req.body;
 
@@ -50,6 +52,23 @@ app.post("/extract-and-translate-subtitles", async (req, res) => {
   } catch (error) {
     console.error("获取或翻译字幕时出错:", error.message);
     res.status(500).json({ error: "获取或翻译字幕时出错" });
+  }
+});
+
+// 语法分析 API 端点
+app.post("/analyze-grammar", async (req, res) => {
+  const { text } = req.body;
+
+  if (!text) {
+    return res.status(400).json({ error: "缺少文本参数" });
+  }
+
+  try {
+    const analysis = await analyzeGrammar(text);
+    res.json({ analysis });
+  } catch (error) {
+    console.error("语法分析出错:", error.message);
+    res.status(500).json({ error: "语法分析出错" });
   }
 });
 

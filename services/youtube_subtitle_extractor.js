@@ -7,9 +7,6 @@ const crypto = require("crypto");
 
 async function getSubtitles(info) {
   try {
-    // 获取视频信息
-    // const info = await ytdl.getInfo(videoUrl);
-
     // 找到字幕轨道
     const tracks =
       info.player_response.captions?.playerCaptionsTracklistRenderer
@@ -54,18 +51,21 @@ async function getSubtitles(info) {
 /*
 [
   {
+    id: "subtitle_1",
     start: 0.485,
     end: 5.297,
     originText: "MR. TRASK: I'm going to recommend to the disciplinary committee"
     translatedText: "" // 初始化为空字符串，后续会填充翻译
   },
   {
+    id: "subtitle_2",
     start: 5.297,
     end: 7.878,
     originText: "that you be expelled, Mr. Simms."
     translatedText: ""
   },
   {
+    id: "subtitle_3",
     start: 7.878,
     end: 11.666,
     originText: "You are a cover-up artist and you are a liar."
@@ -88,6 +88,7 @@ function parseCaptionsToArray(captionsXml) {
 
     if (content) {
       subtitles.push({
+        id: `subtitle_${i + 1}`,
         start: start,
         end: start + dur,
         originText: decodeHTML(content),

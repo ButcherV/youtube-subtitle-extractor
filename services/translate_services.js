@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const { OPENAI_API_ENDPOINT } = require("../constants");
 const API_KEY = process.env.OPENAI_API_KEY;
 const MAX_CONCURRENT_REQUESTS = 20; // 最大并发请求数
 
@@ -21,7 +21,7 @@ async function translateTextWithGPT(
   }
 
   try {
-    const response = await axios.post(API_ENDPOINT, {
+    const response = await axios.post(OPENAI_API_ENDPOINT, {
       model: "gpt-3.5-turbo",
       messages: [
         {

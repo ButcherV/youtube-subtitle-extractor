@@ -1,4 +1,4 @@
-require('dotenv').config();
+require("dotenv").config();
 const ytdl = require("ytdl-core");
 const express = require("express");
 const cors = require("cors");
@@ -6,6 +6,7 @@ const fs = require("fs").promises;
 const { getSubtitles } = require("./services/youtube_subtitle_extractor");
 const { translateSubtitles } = require("./services/translate_services");
 const { analyzeGrammar } = require("./services/grammar_analysis");
+const { extractVideoMetadata } = require("./services/youtube_metadata_extractor");
 
 const app = express();
 const port = 3000;
@@ -15,40 +16,48 @@ app.use(cors());
 
 // 提取并翻译字幕 API 端点
 app.post("/extract-and-translate-subtitles", async (req, res) => {
-  const { videoUrl, targetLanguage = 'zh' } = req.body;
+  const { videoUrl, targetLanguage = "zh" } = req.body;
 
   if (!videoUrl) {
     return res.status(400).json({ error: "缺少 videoUrl 参数" });
   }
 
   try {
+    // 步骤1：获取视频信息和提取字幕
     const info = await ytdl.getInfo(videoUrl);
-    const videoTitle = info.videoDetails.title;
-    const videoDescription = info.videoDetails.description;
-    const { parsedSubtitles, tempFilePath } = await getSubtitles(info);
-    
-    // 翻译字幕，传入视频标题和描述
-    const translatedSubtitles = await translateSubtitles(parsedSubtitles, targetLanguage, videoTitle, videoDescription);
+    const { 
+      parsedSubtitles
+      // tempFilePath 
+    } = await getSubtitles(info);
 
-    res.json(
-      { 
-        subtitles: translatedSubtitles,
-        metadata: {
-          videoTitle,
-          videoDescription
-        }
-      }
+    // TODO: 步骤2：如果没有字幕，使用 Whisper 生成（暂未实现）
+    // if (!parsedSubtitles) {
+    //   parsedSubtitles = await generateSubtitlesWithWhisper(videoUrl);
+    // }
+
+    // 步骤 3：提取元数据并翻译字幕
+    const metadata = await extractVideoMetadata(info);
+    const translatedSubtitles = await translateSubtitles(
+      parsedSubtitles,
+      targetLanguage,
+      metadata.videoTitle,
+      metadata.videoDescription
     );
 
-    // 在响应发送后删除临时文件
-    res.on('finish', async () => {
-      try {
-        await fs.unlink(tempFilePath);
-        console.log(`临时文件已删除: ${tempFilePath}`);
-      } catch (error) {
-        console.error(`删除临时文件时出错: ${error.message}`);
-      }
+    res.json({
+      subtitles: translatedSubtitles,
+      metadata: metadata,
     });
+
+    // 在响应发送后删除临时文件
+    // res.on("finish", async () => {
+    //   try {
+    //     await fs.unlink(tempFilePath);
+    //     console.log(`临时文件已删除: ${tempFilePath}`);
+    //   } catch (error) {
+    //     console.error(`删除临时文件时出错: ${error.message}`);
+    //   }
+    // });
   } catch (error) {
     console.error("获取或翻译字幕时出错:", error.message);
     res.status(500).json({ error: "获取或翻译字幕时出错" });

@@ -31,17 +31,20 @@ async function getSubtitles(info) {
     // 将字幕内容解析为新的格式
     const parsedSubtitles = parseCaptionsToArray(data);
 
-    // 创建临时文件
-    const tempDir = os.tmpdir();
-    const tempFileName = `subtitles_en_${crypto.randomBytes(16).toString("hex")}.json`;
-    const tempFilePath = path.join(tempDir, tempFileName);
+    // // 创建临时文件
+    // const tempDir = os.tmpdir();
+    // const tempFileName = `subtitles_en_${crypto.randomBytes(16).toString("hex")}.json`;
+    // const tempFilePath = path.join(tempDir, tempFileName);
 
-    // 将解析后的字幕内容写入临时文件
-    await fs.writeFile(tempFilePath, JSON.stringify(parsedSubtitles));
+    // // 将解析后的字幕内容写入临时文件
+    // await fs.writeFile(tempFilePath, JSON.stringify(parsedSubtitles));
 
-    console.log(`解析后的英文字幕已保存到临时文件: ${tempFilePath}`);
+    // console.log(`解析后的英文字幕已保存到临时文件: ${tempFilePath}`);
 
-    return { parsedSubtitles, tempFilePath };
+    return { 
+      parsedSubtitles, 
+      // tempFilePath 
+    };
   } catch (error) {
     console.error("获取英文字幕时出错:", error.message);
     throw error;

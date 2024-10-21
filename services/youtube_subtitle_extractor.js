@@ -47,7 +47,7 @@ async function getSubtitles(info) {
     };
   } catch (error) {
     console.error("获取英文字幕时出错:", error.message);
-    throw error;
+    return { parsedSubtitles: null };
   }
 }
 

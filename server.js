@@ -7,6 +7,7 @@ const { getSubtitles } = require("./services/youtube_subtitle_extractor");
 const { translateSubtitles } = require("./services/translate_services");
 const { analyzeGrammar } = require("./services/grammar_analysis");
 const { extractVideoMetadata } = require("./services/youtube_metadata_extractor");
+const { generateSubtitlesWithWhisper } = require("./services/whisper_subtitle_generator");
 
 const app = express();
 const port = 3000;
@@ -30,10 +31,14 @@ app.post("/extract-and-translate-subtitles", async (req, res) => {
       // tempFilePath 
     } = await getSubtitles(info);
 
-    // TODO: 步骤2：如果没有字幕，使用 Whisper 生成（暂未实现）
-    // if (!parsedSubtitles) {
-    //   parsedSubtitles = await generateSubtitlesWithWhisper(videoUrl);
-    // }
+    console.log("parsedSubtitles1", parsedSubtitles);
+
+    // 步骤2：如果没有字幕，使用 Whisper 生成
+    if (!parsedSubtitles || parsedSubtitles.length === 0) {
+      console.log("未找到自带字幕，使用 Whisper 生成...");
+      parsedSubtitles = await generateSubtitlesWithWhisper(videoUrl);
+    }
+    console.log("parsedSubtitles2", parsedSubtitles);
 
     // 步骤 3：提取元数据并翻译字幕
     const metadata = await extractVideoMetadata(info);

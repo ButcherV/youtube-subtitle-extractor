@@ -26,7 +26,7 @@ app.post("/extract-and-translate-subtitles", async (req, res) => {
   try {
     // 步骤1：获取视频信息和提取字幕
     const info = await ytdl.getInfo(videoUrl);
-    const { 
+    let { 
       parsedSubtitles
       // tempFilePath 
     } = await getSubtitles(info);

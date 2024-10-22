@@ -22,17 +22,17 @@ async function generateSubtitlesWithWhisper(videoUrl) {
     const audioStream = await extractAudioFromYouTube(videoUrl);
     console.log("步骤 1: 音频流提取完成");
 
-    // // 步骤 2: 使用 Whisper API 将音频转换为文字
-    // console.log("步骤 2: 开始使用 Whisper API 转换音频");
-    // const subtitles = await transcribeAudio(audioStream);
-    // console.log("步骤 2: Whisper API 转换完成");
+    // 步骤 2: 使用 Whisper API 将音频转换为文字
+    console.log("步骤 2: 开始使用 Whisper API 转换音频");
+    const subtitles = await transcribeAudio(audioStream);
+    console.log("步骤 2: Whisper API 转换完成");
 
-    // // 步骤 3: 将 Whisper 输出转换为所需的格式
-    // console.log("步骤 3: 开始格式化字幕");
-    // const formattedSubtitles = formatSubtitles(subtitles);
-    // console.log("步骤 3: 字幕格式化完成");
+    // 步骤 3: 将 Whisper 输出转换为所需的格式
+    console.log("步骤 3: 开始格式化字幕");
+    const formattedSubtitles = formatSubtitles(subtitles);
+    console.log("步骤 3: 字幕格式化完成");
 
-    // return formattedSubtitles;
+    return formattedSubtitles;
   } catch (error) {
     console.error("生成字幕时出错:", error);
     throw error;
@@ -118,7 +118,7 @@ async function transcribeAudio(audioFilePath) {
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
     });
-    console.log("Whisper API 响应成功");
+    console.log("Whisper API 响应成功", response.data);
 
     // 删除临时文件
     fs.unlink(audioFilePath, (err) => {
@@ -147,6 +147,7 @@ function formatSubtitles(whisperOutput) {
     translatedText: "", // 初始化为空字符串，后续会填充翻译
   }));
   console.log(`格式化完成，共 ${formattedSubtitles.length} 条字幕`);
+  console.log("formattedSubtitles", formattedSubtitles);
   return formattedSubtitles;
 }
 

@@ -8,6 +8,12 @@ const { translateSubtitles } = require("./services/translate_services");
 const { analyzeGrammar } = require("./services/grammar_analysis");
 const { extractVideoMetadata } = require("./services/youtube_metadata_extractor");
 const { generateSubtitlesWithWhisper } = require("./services/whisper_subtitle_generator");
+const authRoutes = require('./routes/auth');
+
+const mongoose = require('mongoose');
+mongoose.connect(process.env.MONGODB_URI)
+.then(() => console.log('Connected to MongoDB'))
+.catch((err) => console.error('Could not connect to MongoDB', err));
 
 const app = express();
 const port = 3000;
@@ -85,6 +91,15 @@ app.post("/analyze-grammar", async (req, res) => {
     res.status(500).json({ error: "语法分析出错" });
   }
 });
+
+//  auth: 注册路由
+app.use('/auth', authRoutes);
+
+app._router.stack.forEach(function(r){
+  if (r.route && r.route.path){
+    console.log(r.route.path)
+  }
+})
 
 app.listen(port, () => {
   console.log(`服务器运行在 http://localhost:${port}`);

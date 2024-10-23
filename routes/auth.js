@@ -60,7 +60,7 @@ router.post('/request-verification', async (req, res) => {
 // 【注册】- 注册功能路由
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, verificationCode } = req.body;
+    const { username, email, password, verificationCode } = req.body;
 
     // 检查验证码是否有效
     const storedVerification = verificationCodes.get(email);
@@ -80,6 +80,7 @@ router.post('/register', async (req, res) => {
 
     // 创建新用户
     const newUser = new User({
+      username,
       email,
       password: hashedPassword
     });

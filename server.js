@@ -9,6 +9,7 @@ const { analyzeGrammar } = require("./services/grammar_analysis");
 const { extractVideoMetadata } = require("./services/youtube_metadata_extractor");
 const { generateSubtitlesWithWhisper } = require("./services/whisper_subtitle_generator");
 const authRoutes = require('./routes/auth');
+const authMiddleware = require('./middleware/auth');
 
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGODB_URI)
@@ -22,7 +23,7 @@ app.use(express.json());
 app.use(cors());
 
 // 提取并翻译字幕 API 端点
-app.post("/extract-and-translate-subtitles", async (req, res) => {
+app.post("/extract-and-translate-subtitles", authMiddleware, async (req, res) => {
   const { videoUrl, targetLanguage = "zh" } = req.body;
 
   if (!videoUrl) {
@@ -76,7 +77,7 @@ app.post("/extract-and-translate-subtitles", async (req, res) => {
 });
 
 // 语法分析 API 端点
-app.post("/analyze-grammar", async (req, res) => {
+app.post("/analyze-grammar", authMiddleware, async (req, res) => {
   const { text } = req.body;
 
   if (!text) {

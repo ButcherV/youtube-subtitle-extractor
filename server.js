@@ -9,6 +9,7 @@ const { analyzeGrammar } = require("./services/grammar_analysis");
 const { extractVideoMetadata } = require("./services/youtube_metadata_extractor");
 const { generateSubtitlesWithWhisper } = require("./services/whisper_subtitle_generator");
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
 const authMiddleware = require('./middleware/auth');
 
 const mongoose = require('mongoose');
@@ -93,8 +94,11 @@ app.post("/analyze-grammar", authMiddleware, async (req, res) => {
   }
 });
 
-//  auth: 注册路由
+//  auth: 注册、登录相关的路由
 app.use('/auth', authRoutes);
+
+// user: 用户相关的路由
+app.use('/user', userRoutes);
 
 app._router.stack.forEach(function(r){
   if (r.route && r.route.path){

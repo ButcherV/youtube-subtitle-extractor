@@ -3,6 +3,7 @@ const ytdl = require("ytdl-core");
 async function extractVideoMetadata(info) {
   const videoTitle = info.videoDetails.title;
   const videoDescription = info.videoDetails.description;
+  const videoDuration = parseInt(info.videoDetails.lengthSeconds);
 
   const format =
     info.formats.find((format) => {
@@ -21,6 +22,7 @@ async function extractVideoMetadata(info) {
     videoTitle,
     videoDescription,
     directVideoUrl,
+    videoDuration,
   };
 }
 

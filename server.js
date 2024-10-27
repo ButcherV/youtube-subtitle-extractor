@@ -8,6 +8,7 @@ const { translateSubtitles } = require("./services/translate_services");
 const { analyzeGrammar } = require("./services/grammar_analysis");
 const { extractVideoMetadata } = require("./services/youtube_metadata_extractor");
 const { generateSubtitlesWithWhisper } = require("./services/whisper_subtitle_generator");
+const { processVideo } = require("./services/video_processor");
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const authMiddleware = require('./middleware/auth');
@@ -91,6 +92,24 @@ app.post("/analyze-grammar", authMiddleware, async (req, res) => {
   } catch (error) {
     console.error("语法分析出错:", error.message);
     res.status(500).json({ error: "语法分析出错" });
+  }
+});
+
+// 处理视频 API - 一次性处理 meta/subtitles/grammer
+app.post("/process-video", authMiddleware, async (req, res) => {
+  const { videoUrl, targetLanguage = "zh" } = req.body;
+  const userId = req.user.userId; // 假设 authMiddleware 已经将用户信息附加到 req.user
+
+  if (!videoUrl) {
+    return res.status(400).json({ error: "缺少 videoUrl 参数" });
+  }
+
+  try {
+    const result = await processVideo(videoUrl, targetLanguage, userId);
+    res.json(result);
+  } catch (error) {
+    console.error("处理视频时出错:", error.message);
+    res.status(500).json({ error: "处理视频时出错" });
   }
 });
 

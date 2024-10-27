@@ -11,7 +11,7 @@ const os = require('os');
 const youtubedl = require('youtube-dl-exec');
 
 const API_KEY = process.env.OPENAI_API_KEY;
-const WHISPER_API_URL = "https://api.openai.com/v1/audio/transcriptions";
+const WHISPER_API_URL = "https://api.gpts.vin/v1/audio/transcriptions";
 
 async function generateSubtitlesWithWhisper(videoUrl) {
   try {

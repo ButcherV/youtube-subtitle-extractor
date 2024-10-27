@@ -12,6 +12,7 @@ const { processVideo } = require("./services/video_processor");
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const authMiddleware = require('./middleware/auth');
+const ProcessedVideo = require('./models/ProcessedVideo');
 
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGODB_URI)

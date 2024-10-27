@@ -100,11 +100,17 @@ app.post("/process-video", authMiddleware, async (req, res) => {
   const { videoUrl, targetLanguage = "zh" } = req.body;
   const userId = req.user.userId; // 假设 authMiddleware 已经将用户信息附加到 req.user
 
-  if (!videoUrl) {
-    return res.status(400).json({ error: "缺少 videoUrl 参数" });
-  }
-
   try {
+    if (!videoUrl) {
+      // 如果没有提供 videoUrl，返回用户的所有处理过的视频列表
+      const processedVideos = await ProcessedVideo.find({ userId })
+        .sort({ createdAt: -1 })
+        .limit(10)  // 限制返回数量，可以根据需求调整
+        .select('videoId data.meta');  // 只选择需要的字段
+      return res.json(processedVideos);
+    }
+
+    // 如果提供了 videoUrl，执行原有的视频处理逻辑
     const result = await processVideo(videoUrl, targetLanguage, userId);
     res.json(result);
   } catch (error) {

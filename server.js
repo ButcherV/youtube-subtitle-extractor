@@ -95,7 +95,9 @@ app.post("/analyze-grammar", authMiddleware, async (req, res) => {
   }
 });
 
-// 处理视频 API - 一次性处理 meta/subtitles/grammer
+// 处理视频 API
+// 传参：一次性处理 meta/subtitles/grammer
+// 不传参：返回用户的所有处理过的视频列表
 app.post("/process-video", authMiddleware, async (req, res) => {
   const { videoUrl, targetLanguage = "zh" } = req.body;
   const userId = req.user.userId; // 假设 authMiddleware 已经将用户信息附加到 req.user

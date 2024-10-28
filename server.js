@@ -108,8 +108,8 @@ app.post("/process-video", authMiddleware, async (req, res) => {
       // 如果没有提供 videoUrl，返回用户的所有处理过的视频列表
       const processedVideos = await ProcessedVideo.find({ userId })
         .sort({ createdAt: -1 })
-        .limit(10)  // 限制返回数量，可以根据需求调整
-        .select('videoId data.meta');  // 只选择需要的字段
+        .limit(20)  // 限制返回数量，可以根据需求调整
+        // .select('videoId data.meta');  // 只选择需要的字段
       return res.json(processedVideos);
     }
 

@@ -11,7 +11,8 @@ const os = require('os');
 const youtubedl = require('youtube-dl-exec');
 
 const API_KEY = process.env.OPENAI_API_KEY;
-const WHISPER_API_URL = "https://api.gpts.vin/v1/audio/transcriptions";
+// const { OPENAI_API_ENDPOINT } = require("../constants");
+const WHISPER_API_URL = "https://api.openai.com/v1/audio/transcriptions";
 
 async function generateSubtitlesWithWhisper(videoUrl) {
   try {
@@ -106,7 +107,11 @@ async function transcribeAudio(audioFilePath) {
   const audioFile = fs.createReadStream(audioFilePath);
   formData.append("file", audioFile, { filename: "audio.mp3", contentType: "audio/mpeg" });
   formData.append("model", "whisper-1");
+  // formData.append("response_format", "verbose_json");
+  // formData.append("timestamps", "true"); 
+  // formData.append("response_format", "srt");
   formData.append("response_format", "verbose_json");
+  formData.append("timestamp_granularities[]", "segment");
 
   try {
     console.log("发送请求到 Whisper API");
@@ -118,7 +123,9 @@ async function transcribeAudio(audioFilePath) {
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
     });
-    console.log("Whisper API 响应成功", response.data);
+
+    // 打印完整响应
+    console.log("完整的 Whisper API 响应:", JSON.stringify(response.data, null, 2));
 
     // 删除临时文件
     fs.unlink(audioFilePath, (err) => {
@@ -138,6 +145,7 @@ async function transcribeAudio(audioFilePath) {
 }
 
 function formatSubtitles(whisperOutput) {
+  console.log("whisperOutput", whisperOutput);
   console.log("开始格式化 Whisper 输出");
   const formattedSubtitles = whisperOutput.segments.map((segment, index) => ({
     id: `subtitle_${index + 1}`,

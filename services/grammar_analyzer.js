@@ -34,33 +34,47 @@ async function analyzeGrammar({ text, context = {} }) {
 }
 
 async function analyzeType(text, context) {
-  // 清理文本（去除标点符号和多余空格）后再比较
+  // 1. 先用简单的词数判断（放在最前面）
+  const wordCount = text.trim().split(/\s+/).length;
+  if (wordCount === 1) {
+    return 'WORD';
+  } else if (wordCount > 1) {
+    return 'PHRASE';
+  }
+
+  // 2. 然后判断是否完整句子
   const cleanText = text.trim().replace(/[.,!?]$/, '');
   const cleanOriginText = context.originText.trim().replace(/[.,!?]$/, '');
-
-  // 如果清理后的文本相同，就是完整句子
   if (cleanText === cleanOriginText) {
     return 'SENTENCE';
   }
 
-  // 如果不完全相同，再用 LLM 判断类型
+  // 3. 如果还是无法判断，才使用 LLM
   const prompt = `
-分析以下内容是短语还是单词：
+分析以下内容是短语还是单词。
 
 原句：${context.originText}
 要分析的内容：${text}
 文章标题：${context.title || "无"}
 文章描述：${context.description || "无"}
 
-请判断"要分析的内容"是：
-1. 短语或不完整的句子（是原句的一部分）
-2. 单个单词
-
-只返回以下某一个值：PHRASE 或 WORD
+只能回答 PHRASE 或 WORD，禁止返回其他任何内容。
+如果是短语或词组：返回 PHRASE
+如果是单个单词：返回 WORD
 `;
 
-  const response = await callLLM(prompt);
-  return response.trim();
+  let response = await callLLM(prompt);
+  response = response.trim().toUpperCase();
+  
+  // 强制匹配，只接受 PHRASE 或 WORD
+  if (response.includes('PHRASE')) {
+    return 'PHRASE';
+  } else if (response.includes('WORD')) {
+    return 'WORD';
+  } else {
+    // 如果还是无法匹配，使用后备方案
+    return text.split(/\s+/).length > 1 ? 'PHRASE' : 'WORD';
+  }
 }
 
 // 一个通用的 JSON 解析函数
@@ -129,7 +143,7 @@ async function analyzePhrase(text, context) {
   "translation": "中文翻译",
   "original": "短语的原始形式",
   "role": "在原句中的语法作用",
-  "type": "短语类型",
+  "phraseType": "短语类型",
   "usage": "用法说明",
   "examples": ["例句1", "例句2"],
   "alternatives": ["相似表达1", "相似表达2"]
@@ -157,13 +171,6 @@ async function analyzeWord(text, context) {
   "original": "单词的原始形式",
   "phonetic": "音标",
   "roleInSentence": "在原句中的词性和作用",
-  "forms": {
-    "original": "原型",
-    "past": "过去式",
-    "pastParticiple": "过去分词",
-    "present": "现在分词"
-  },
-  "meanings": ["释义1", "释义2"],
   "collocations": ["搭配1", "搭配2"],
   "examples": ["原句中的用法", "其他例句1", "其他例句2"],
   "synonyms": ["同义词1", "同义词2"],

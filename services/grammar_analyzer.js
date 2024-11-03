@@ -33,48 +33,85 @@ async function analyzeGrammar({ text, context = {} }) {
   }
 }
 
+// async function analyzeType(text, context) {
+//   // 1. 先用简单的词数判断（放在最前面）
+//   const wordCount = text.trim().split(/\s+/).length;
+//   if (wordCount === 1) {
+//     return 'WORD';
+//   } else if (wordCount > 1) {
+//     return 'PHRASE';
+//   }
+
+//   // 2. 然后判断是否完整句子
+//   const cleanText = text.trim().replace(/[.,!?]$/, '');
+//   const cleanOriginText = context.originText.trim().replace(/[.,!?]$/, '');
+//   if (cleanText === cleanOriginText) {
+//     return 'SENTENCE';
+//   }
+
+//   // 3. 如果还是无法判断，才使用 LLM
+//   const prompt = `
+// 分析以下内容是短语还是单词。
+
+// 原句：${context.originText}
+// 要分析的内容：${text}
+// 文章标题：${context.title || "无"}
+// 文章描述：${context.description || "无"}
+
+// 只能回答 PHRASE 或 WORD，禁止返回其他任何内容。
+// 如果是短语或词组：返回 PHRASE
+// 如果是单个单词：返回 WORD
+// `;
+
+//   let response = await callLLM(prompt);
+//   response = response.trim().toUpperCase();
+  
+//   // 强制匹配，只接受 PHRASE 或 WORD
+//   if (response.includes('PHRASE')) {
+//     return 'PHRASE';
+//   } else if (response.includes('WORD')) {
+//     return 'WORD';
+//   } else {
+//     // 如果还是无法匹配，使用后备方案
+//     return text.split(/\s+/).length > 1 ? 'PHRASE' : 'WORD';
+//   }
+// }
+
 async function analyzeType(text, context) {
-  // 1. 先用简单的词数判断（放在最前面）
+  // 1. 单词判断（最简单直接）
   const wordCount = text.trim().split(/\s+/).length;
   if (wordCount === 1) {
     return 'WORD';
-  } else if (wordCount > 1) {
-    return 'PHRASE';
   }
 
-  // 2. 然后判断是否完整句子
-  const cleanText = text.trim().replace(/[.,!?]$/, '');
-  const cleanOriginText = context.originText.trim().replace(/[.,!?]$/, '');
-  if (cleanText === cleanOriginText) {
-    return 'SENTENCE';
-  }
-
-  // 3. 如果还是无法判断，才使用 LLM
+  // 2. 让 LLM 判断是短语还是句子
   const prompt = `
-分析以下内容是短语还是单词。
+分析以下内容的语法结构：
 
 原句：${context.originText}
 要分析的内容：${text}
-文章标题：${context.title || "无"}
-文章描述：${context.description || "无"}
 
-只能回答 PHRASE 或 WORD，禁止返回其他任何内容。
-如果是短语或词组：返回 PHRASE
-如果是单个单词：返回 WORD
+请判断"要分析的内容"是以下哪种情况：
+1. 完整句子：
+   - 陈述句（包含主谓结构）
+   - 疑问句（以疑问词开头或助动词开头）
+   - 祈使句（以动词原形开头）
+   - 感叹句（以what/how开头或带感叹号）
+
+2. 短语：
+   - 名词短语（如：apple pie, high school）
+   - 动词短语（如：be used to, look forward to）
+   - 介词短语（如：in the morning, at school）
+   - 形容词短语（如：very happy）
+   - 副词短语（如：very quickly）
+
+只返回 SENTENCE 或 PHRASE，禁止返回其他内容。
 `;
 
-  let response = await callLLM(prompt);
-  response = response.trim().toUpperCase();
+  const response = await callLLM(prompt);
+  const type = response.trim().toUpperCase();
   
-  // 强制匹配，只接受 PHRASE 或 WORD
-  if (response.includes('PHRASE')) {
-    return 'PHRASE';
-  } else if (response.includes('WORD')) {
-    return 'WORD';
-  } else {
-    // 如果还是无法匹配，使用后备方案
-    return text.split(/\s+/).length > 1 ? 'PHRASE' : 'WORD';
-  }
+  return type === 'SENTENCE' ? 'SENTENCE' : 'PHRASE';
 }
 
 // 一个通用的 JSON 解析函数

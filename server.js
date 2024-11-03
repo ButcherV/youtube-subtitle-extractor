@@ -7,6 +7,7 @@ const userRoutes = require('./routes/user');
 const authMiddleware = require('./middleware/auth');
 const ProcessedVideo = require('./models/ProcessedVideo');
 const grammarRoutes = require('./routes/grammar');
+const wordcardRoutes = require('./routes/wordcard');
 
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGODB_URI)
@@ -54,6 +55,7 @@ app.use('/user', userRoutes);
 // 路由
 app.use('/grammar', grammarRoutes);
 
+app.use('/wordcard', wordcardRoutes);
 
 app.listen(port, () => {
   console.log(`服务器运行在 http://localhost:${port}`);

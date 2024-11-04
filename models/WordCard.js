@@ -33,7 +33,6 @@ const WordCardSchema = new mongoose.Schema({
   videoInfos: [{
     videoId: String,      // YouTube 视频 ID
     videoTitle: String,   // 视频标题
-    thumbnailUrl: String, // 视频缩略图
     text: String,         // 完整的字幕文本
     startTime: Number,    // 字幕开始时间（毫秒）
     endTime: Number,      // 字幕结束时间（毫秒）

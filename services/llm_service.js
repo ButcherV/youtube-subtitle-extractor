@@ -29,7 +29,15 @@ async function callLLM(prompt) {
 
     return response.data.choices[0].message.content;
   } catch (error) {
-    console.error("LLM API 调用失败:", error);
+    console.error("LLM API 调用错误:", error.code || error.message);
+    
+    if (retries > 0 && (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT')) {
+      console.log(`重试剩余次数: ${retries - 1}`);
+      // 等待 1 秒后重试
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return callLLM(messages, retries - 1);
+    }
+    
     throw error;
   }
 }

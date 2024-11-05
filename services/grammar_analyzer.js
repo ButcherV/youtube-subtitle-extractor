@@ -28,8 +28,20 @@ async function analyzeGrammar({ text, context = {} }) {
       ...result,
     };
   } catch (error) {
-    console.error("分析过程出错:", error);
-    throw error;
+    console.error("分析过程出错:", error.code || error.message);
+    
+    // 根据错误类型抛出不同的错误
+    if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
+      throw {
+        code: 'SERVICE_UNAVAILABLE',
+        message: '语法分析服务暂时不可用，请稍后重试'
+      };
+    }
+    
+    throw {
+      code: 'ANALYSIS_ERROR',
+      message: '语法分析失败，请重试'
+    };
   }
 }
 

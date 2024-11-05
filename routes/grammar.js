@@ -37,8 +37,28 @@ router.post('/analyze', authMiddleware, async (req, res) => {
     const result = await analyzeGrammar({ text, context, userId });
     res.json(result);
   } catch (error) {
-    console.error('语法分析错误:', error);
-    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
+    console.error("语法分析错误:", error);
+    
+    // 处理已知错误类型
+    if (error.code === 'SERVICE_UNAVAILABLE') {
+      return res.status(503).json({
+        error: error.code,
+        message: error.message || '服务暂时不可用，请稍后重试'
+      });
+    }
+    
+    if (error.code === 'ANALYSIS_ERROR') {
+      return res.status(400).json({
+        error: error.code,
+        message: error.message || '分析失败，请检查输入'
+      });
+    }
+
+    // 未知错误
+    res.status(500).json({ 
+      error: "INTERNAL_SERVER_ERROR",
+      message: "服务器内部错误，请稍后重试"
+    });
   }
 });
 

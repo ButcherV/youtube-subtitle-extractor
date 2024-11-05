@@ -138,4 +138,41 @@ router.get("/stats", authMiddleware, async (req, res) => {
   }
 });
 
+// GET /wordcard/list - 获取单词卡片列表
+// GET /wordcard/list?type=WORD
+// GET /wordcard/list?isInErrorBook=true
+// GET /wordcard/list?type=SENTENCE
+router.get("/list", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { type, isInErrorBook } = req.query;
+
+    // 构建查询条件
+    const query = { userId };
+    
+    // 如果指定了类型，添加类型筛选
+    if (type) {
+      query.type = type;
+    }
+
+    // 如果指定了错题本状态，添加错题本筛选
+    if (isInErrorBook !== undefined) {
+      query.isInErrorBook = isInErrorBook === 'true';
+    }
+
+    // 获取数据
+    const wordCards = await WordCard.find(query)
+      .sort({ createdAt: -1 });  // 按创建时间倒序
+
+    res.json({
+      success: true,
+      data: wordCards
+    });
+
+  } catch (error) {
+    console.error("获取单词卡片列表失败:", error);
+    res.status(500).json({ error: "INTERNAL_SERVER_ERROR" });
+  }
+});
+
 module.exports = router;

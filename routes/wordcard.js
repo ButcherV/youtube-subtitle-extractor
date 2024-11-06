@@ -175,4 +175,39 @@ router.get("/list", authMiddleware, async (req, res) => {
   }
 });
 
+// PUT /wordcard/toggle-error-book/:id - 切换错题本状态
+router.put("/toggle-error-book/:id", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const cardId = req.params.id;
+
+    // 查找该用户的这条记录
+    const wordCard = await WordCard.findOne({ _id: cardId, userId });
+
+    if (!wordCard) {
+      return res.status(404).json({
+        error: "NOT_FOUND",
+        message: "未找到该记录"
+      });
+    }
+
+    // 切换错题本状态
+    wordCard.isInErrorBook = !wordCard.isInErrorBook;
+    await wordCard.save();
+
+    res.json({
+      success: true,
+      data: wordCard,
+      message: wordCard.isInErrorBook ? "已加入复习清单" : "已从复习清单中移除"
+    });
+
+  } catch (error) {
+    console.error("更新复习清单状态失败:", error);
+    res.status(500).json({ 
+      error: "INTERNAL_SERVER_ERROR",
+      message: "服务器内部错误"
+    });
+  }
+});
+
 module.exports = router;

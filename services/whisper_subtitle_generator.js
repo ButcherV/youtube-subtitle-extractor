@@ -25,12 +25,17 @@ async function generateSubtitlesWithWhisper(videoUrl) {
 
     // 步骤 2: 使用 Whisper API 将音频转换为文字
     console.log("步骤 2: 开始使用 Whisper API 转换音频");
-    const subtitles = await transcribeAudio(audioStream);
+    const whisperResponse = await transcribeAudio(audioStream);
     console.log("步骤 2: Whisper API 转换完成");
+
+    // 步骤 2.5: 检查语言
+    if (whisperResponse.language.toLowerCase() !== 'english') {
+      throw new Error(`VIDEO_LANGUAGE_ERROR:检测到视频语言为 ${whisperResponse.language}，请上传英文视频`);
+    }
 
     // 步骤 3: 将 Whisper 输出转换为所需的格式
     console.log("步骤 3: 开始格式化字幕");
-    const formattedSubtitles = formatSubtitles(subtitles);
+    const formattedSubtitles = formatSubtitles(whisperResponse);
     console.log("步骤 3: 字幕格式化完成");
 
     return formattedSubtitles;
@@ -100,21 +105,68 @@ async function extractAudioFromYouTube(videoUrl) {
   }
 }
 
+// async function transcribeAudio(audioFilePath) {
+//   console.log("开始准备 Whisper API 请求");
+//   const formData = new FormData();
+  
+//   const audioFile = fs.createReadStream(audioFilePath);
+//   formData.append("file", audioFile, { filename: "audio.mp3", contentType: "audio/mpeg" });
+//   formData.append("model", "whisper-1");
+//   // formData.append("response_format", "verbose_json");
+//   // formData.append("timestamps", "true"); 
+//   // formData.append("response_format", "srt");
+//   formData.append("response_format", "verbose_json");
+//   formData.append("timestamp_granularities[]", "segment");
+
+//   try {
+//     console.log("发送请求到 Whisper API");
+//     console.log("请求大小:", formData.getLengthSync());
+//     const response = await axios.post(WHISPER_API_URL, formData, {
+//       headers: {
+//         ...formData.getHeaders(),
+//         Authorization: `Bearer ${API_KEY}`,
+//       },
+//       maxContentLength: Infinity,
+//       maxBodyLength: Infinity,
+//       onUploadProgress: (progressEvent) => {  // 添加上传进度
+//         console.log(`上传进度: ${Math.round((progressEvent.loaded * 100) / progressEvent.total)}%`);
+//       }
+//     });
+
+//     // 打印完整响应
+//     console.log("完整的 Whisper API 响应:", JSON.stringify(response.data, null, 2));
+
+//     // 删除临时文件
+//     fs.unlink(audioFilePath, (err) => {
+//       if (err) console.error("删除临时文件失败:", err);
+//       else console.log("临时文件已删除");
+//     });
+
+//     return response.data;
+//   } catch (error) {
+//     console.error("Whisper API 调用失败:", error.message);
+//     if (error.response) {
+//       console.error("响应状态:", error.response.status);
+//       console.error("响应数据:", error.response.data);
+//     }
+//     throw error;
+//   }
+// }
 async function transcribeAudio(audioFilePath) {
   console.log("开始准备 Whisper API 请求");
   const formData = new FormData();
   
+  console.log("正在读取音频文件:", audioFilePath);
   const audioFile = fs.createReadStream(audioFilePath);
   formData.append("file", audioFile, { filename: "audio.mp3", contentType: "audio/mpeg" });
   formData.append("model", "whisper-1");
-  // formData.append("response_format", "verbose_json");
-  // formData.append("timestamps", "true"); 
-  // formData.append("response_format", "srt");
   formData.append("response_format", "verbose_json");
   formData.append("timestamp_granularities[]", "segment");
 
   try {
     console.log("发送请求到 Whisper API");
+    // console.log("请求大小:", formData.getLengthSync());
+    
     const response = await axios.post(WHISPER_API_URL, formData, {
       headers: {
         ...formData.getHeaders(),
@@ -122,27 +174,36 @@ async function transcribeAudio(audioFilePath) {
       },
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
+      onUploadProgress: (progressEvent) => {  // 添加上传进度
+        console.log(`上传进度: ${Math.round((progressEvent.loaded * 100) / progressEvent.total)}%`);
+      }
     });
 
-    // 打印完整响应
-    console.log("完整的 Whisper API 响应:", JSON.stringify(response.data, null, 2));
-
-    // 删除临时文件
-    fs.unlink(audioFilePath, (err) => {
-      if (err) console.error("删除临时文件失败:", err);
-      else console.log("临时文件已删除");
-    });
-
+    console.log("Whisper API 响应状态:", response.status);  // 添加这行
     return response.data;
   } catch (error) {
     console.error("Whisper API 调用失败:", error.message);
     if (error.response) {
       console.error("响应状态:", error.response.status);
       console.error("响应数据:", error.response.data);
+    } else if (error.request) {
+      console.error("请求已发送但没有收到响应");
+      console.error("请求详情:", error.request);
+    } else {
+      console.error("请求配置出错:", error.config);
     }
     throw error;
+  } finally {
+    // 清理临时文件
+    try {
+      await fs.promises.unlink(audioFilePath);
+      console.log("临时文件已删除:", audioFilePath);
+    } catch (err) {
+      console.error("删除临时文件失败:", err);
+    }
   }
 }
+
 
 function formatSubtitles(whisperOutput) {
   console.log("whisperOutput", whisperOutput);

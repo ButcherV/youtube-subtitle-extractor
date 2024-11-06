@@ -38,7 +38,7 @@ const WordCardSchema = new mongoose.Schema({
     endTime: Number,      // 字幕结束时间（毫秒）
   }],
 
-  // 错题本标记
+  //复习本标记
   isInErrorBook: {
     type: Boolean,
     default: false,

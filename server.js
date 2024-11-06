@@ -8,6 +8,7 @@ const authMiddleware = require('./middleware/auth');
 const ProcessedVideo = require('./models/ProcessedVideo');
 const grammarRoutes = require('./routes/grammar');
 const wordcardRoutes = require('./routes/wordcard');
+const videoRoutes = require('./routes/video-check');
 
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGODB_URI)
@@ -42,7 +43,10 @@ app.post("/process-video", authMiddleware, async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("处理视频时出错:", error.message);
-    res.status(500).json({ error: "处理视频时出错" });
+    res.status(400).json({ 
+      success: false,
+      message: error.message  // 保留原始错误信息
+    });
   }
 });
 
@@ -52,10 +56,13 @@ app.use('/auth', authRoutes);
 // user: 用户相关的路由
 app.use('/user', userRoutes);
 
-// 路由
+
 app.use('/grammar', grammarRoutes);
 
 app.use('/wordcard', wordcardRoutes);
+
+// 视频检查相关
+app.use('/video', videoRoutes); 
 
 app.listen(port, () => {
   console.log(`服务器运行在 http://localhost:${port}`);

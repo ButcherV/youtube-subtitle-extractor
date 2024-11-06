@@ -66,7 +66,8 @@ async function processVideo(videoUrl, targetLanguage = "zh", userId) {
       parsedSubtitles,
       targetLanguage,
       metadata.videoTitle,
-      metadata.videoDescription
+      metadata.videoDescription,
+      userId,
     );
 
     // 06. 汇总、返回结果

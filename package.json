@@ -22,6 +22,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.2",
     "nodemailer": "^6.9.15",
+    "rate-limiter-flexible": "^5.0.4",
     "xmldom": "^0.6.0",
     "youtube-dl-exec": "^3.0.10",
     "ytdl-core": "^4.11.5"

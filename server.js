@@ -6,6 +6,7 @@ const { cleanupTempFiles } = require('./services/cleanup_service');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const authMiddleware = require('./middleware/auth');
+const { normalLimiter, sensitiveLimiter, resourceLimiter } = require('./middleware/rate_limit');
 const ProcessedVideo = require('./models/ProcessedVideo');
 const grammarRoutes = require('./routes/grammar');
 const wordcardRoutes = require('./routes/wordcard');
@@ -25,28 +26,26 @@ app.use(cors());
 // 处理视频 API
 // 传参：一次性处理该视频的 meta/subtitles
 // 不传参：返回用户所有处理过的视频的 meta/subtitles
-app.post("/process-video", authMiddleware, async (req, res) => {
+// 使用资源密集型限流
+app.post("/process-video", authMiddleware, resourceLimiter, async (req, res) => {
   const { videoUrl, targetLanguage = "zh" } = req.body;
-  const userId = req.user.userId; // 假设 authMiddleware 已经将用户信息附加到 req.user
+  const userId = req.user.userId;
 
   try {
     if (!videoUrl) {
-      // 如果没有提供 videoUrl，返回用户的所有处理过的视频列表
       const processedVideos = await ProcessedVideo.find({ userId })
         .sort({ createdAt: -1 })
-        .limit(20)  // 限制返回数量，可以根据需求调整
-        // .select('videoId data.meta');  // 只选择需要的字段
+        .limit(20)
       return res.json(processedVideos);
     }
 
-    // 如果提供了 videoUrl，执行原有的视频处理逻辑
     const result = await processVideo(videoUrl, targetLanguage, userId);
     res.json(result);
   } catch (error) {
     console.error("处理视频时出错:", error.message);
     res.status(400).json({ 
       success: false,
-      message: error.message  // 保留原始错误信息
+      message: error.message
     });
   }
 });
@@ -63,19 +62,18 @@ setInterval(() => {
   });
 }, 3600000); // 1小时
 
-//  auth: 注册、登录相关的路由
-app.use('/auth', authRoutes);
+//  auth: 注册、登录相关的路由 - 使用敏感操作限流
+app.use('/auth', sensitiveLimiter, authRoutes);
 
-// user: 用户相关的路由
-app.use('/user', userRoutes);
+// user: 用户相关的路由 - 使用普通限流
+app.use('/user', normalLimiter, userRoutes);
 
+// 普通 API - 使用普通限流
+app.use('/grammar', normalLimiter, grammarRoutes);
+app.use('/wordcard', normalLimiter, wordcardRoutes);
 
-app.use('/grammar', grammarRoutes);
-
-app.use('/wordcard', wordcardRoutes);
-
-// 视频检查相关
-app.use('/video', videoRoutes); 
+// 视频检查相关 - 使用资源密集型限流
+app.use('/video', resourceLimiter, videoRoutes);
 
 app.listen(port, () => {
   console.log(`服务器运行在 http://localhost:${port}`);

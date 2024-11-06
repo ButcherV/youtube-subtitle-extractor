@@ -1,6 +1,6 @@
 const { callLLM } = require("./llm_service");
 
-async function analyzeGrammar({ text, context = {} }) {
+async function analyzeGrammar({ text, context = {}, userId }) {
   try {
     // 1. 判断类型（现在会考虑原文）
     const type = await analyzeType(text, context);
@@ -95,7 +95,7 @@ const GRAMMAR_LLM_OPTIONS = {
 //   }
 // }
 
-async function analyzeType(text, context) {
+async function analyzeType(text, context, userId) {
   // 1. 单词判断（最简单直接）
   const wordCount = text.trim().split(/\s+/).length;
   if (wordCount === 1) {
@@ -126,7 +126,7 @@ async function analyzeType(text, context) {
 只返回 SENTENCE 或 PHRASE，禁止返回其他内容。
 `;
 
-  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS);
+  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS, userId);
   const type = response.trim().toUpperCase();
   
   return type === 'SENTENCE' ? 'SENTENCE' : 'PHRASE';
@@ -149,7 +149,7 @@ async function parseOpenAIResponse(response) {
   }
 }
 
-async function analyzeSentence(text, context) {
+async function analyzeSentence(text, context, userId) {
   const prompt = `
 分析以下句子：
 
@@ -177,12 +177,12 @@ async function analyzeSentence(text, context) {
   "alternatives": ["相似表达1", "相似表达2"]
 }`;
 
-  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS);
+  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS, userId);
   console.log('OpenAI API 返回的原始内容:', response);
   return parseOpenAIResponse(response);
 }
 
-async function analyzePhrase(text, context) {
+async function analyzePhrase(text, context, userId) {
   const prompt = `
 分析以下短语：
 
@@ -204,12 +204,12 @@ async function analyzePhrase(text, context) {
   "alternatives": ["相似表达1", "相似表达2"]
 }`;
 
-  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS);;
+  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS, userId);;
   console.log('OpenAI API 返回的原始内容:', response);
   return parseOpenAIResponse(response);
 }
 
-async function analyzeWord(text, context) {
+async function analyzeWord(text, context, userId) {
   const prompt = `
 分析以下单词：
 
@@ -233,7 +233,7 @@ async function analyzeWord(text, context) {
   "etymology": "词源解释"
 }`;
 
-  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS);;
+  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS, userId);;
   console.log('OpenAI API 返回的原始内容:', response);
   return parseOpenAIResponse(response);
 }

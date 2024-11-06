@@ -1,5 +1,3 @@
-const axios = require('axios');
-
 const { callLLM } = require('./llm_service');
 const MAX_CONCURRENT_REQUESTS = 20; // 最大并发请求数
 
@@ -10,7 +8,8 @@ async function translateTextWithGPT(
   text, 
   targetLanguage = 'zh', 
   videoTitle, 
-  videoDescription
+  videoDescription,
+  userId
 ) {
   if (translationCache.has(text)) {
     return translationCache.get(text);
@@ -23,7 +22,7 @@ async function translateTextWithGPT(
       model: "gpt-4o-mini",
       temperature: 0.7,
       systemPrompt
-    });
+    }, userId);
 
     translationCache.set(text, translatedText);
     return translatedText.trim();
@@ -33,12 +32,18 @@ async function translateTextWithGPT(
   }
 }
 
-async function batchTranslate(subtitles, targetLanguage) {
+async function batchTranslate(subtitles, targetLanguage, videoTitle, videoDescription, userId) {
   const results = [];
   for (let i = 0; i < subtitles.length; i += MAX_CONCURRENT_REQUESTS) {
     const batch = subtitles.slice(i, i + MAX_CONCURRENT_REQUESTS);
     const promises = batch.map(subtitle => 
-      translateTextWithGPT(subtitle.originText, targetLanguage)
+      translateTextWithGPT(
+        subtitle.originText, 
+        targetLanguage, 
+        videoTitle, 
+        videoDescription, 
+        userId
+      )
         .then(translatedText => ({
           ...subtitle,
           translatedText
@@ -55,9 +60,9 @@ async function batchTranslate(subtitles, targetLanguage) {
   return results;
 }
 
-async function translateSubtitles(subtitles, targetLanguage = 'zh') {
+async function translateSubtitles(subtitles, targetLanguage = 'zh', videoTitle = '', videoDescription = '', userId) {
   console.log(`开始翻译 ${subtitles.length} 条字幕`);
-  const translatedSubtitles = await batchTranslate(subtitles, targetLanguage);
+  const translatedSubtitles = await batchTranslate(subtitles, targetLanguage, videoTitle, videoDescription, userId);
   console.log('翻译完成');
   return translatedSubtitles;
 }

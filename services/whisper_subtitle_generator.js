@@ -1,5 +1,4 @@
 // const youtubedl = require("youtube-dl-exec");
-const { Readable } = require("stream");
 const axios = require("axios");
 const FormData = require("form-data");
 const ffmpeg = require("fluent-ffmpeg");
@@ -7,8 +6,8 @@ const ffmpegPath = require("ffmpeg-static");
 ffmpeg.setFfmpegPath(ffmpegPath);
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const youtubedl = require('youtube-dl-exec');
+const RateLimiter = require("./rate_limiter");
 
 const API_KEY = process.env.OPENAI_API_KEY;
 // const { OPENAI_API_ENDPOINT } = require("../constants");
@@ -160,44 +159,50 @@ async function transcribeAudio(audioFilePath, userId, requestId) {
     throw new Error('音频文件不存在');
   }
 
-  const formData = new FormData();
-  console.log(`[${userId}][${requestId}] 正在读取音频文件:`, audioFilePath);
-  const audioFile = fs.createReadStream(audioFilePath);
-  formData.append("file", audioFile, { filename: "audio.mp3", contentType: "audio/mpeg" });
-  formData.append("model", "whisper-1");
-  formData.append("response_format", "verbose_json");
-  formData.append("timestamp_granularities[]", "segment");
+  // 将 Whisper API 调用封装为独立函数
+  const makeWhisperRequest = async () => {
+    const formData = new FormData();
+    console.log(`[${userId}][${requestId}] 正在读取音频文件:`, audioFilePath);
+    const audioFile = fs.createReadStream(audioFilePath);
+    formData.append("file", audioFile, { filename: "audio.mp3", contentType: "audio/mpeg" });
+    formData.append("model", "whisper-1");
+    formData.append("response_format", "verbose_json");
+    formData.append("timestamp_granularities[]", "segment");
 
-  try {
-    console.log(`[${userId}][${requestId}] 发送请求到 Whisper API`);
-    
-    const response = await axios.post(WHISPER_API_URL, formData, {
-      headers: {
-        ...formData.getHeaders(),
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity,
-      onUploadProgress: (progressEvent) => {
-        console.log(`[${userId}][${requestId}] 上传进度: ${Math.round((progressEvent.loaded * 100) / progressEvent.total)}%`);
+    try {
+      console.log(`[${userId}][${requestId}] 发送请求到 Whisper API`);
+      
+      const response = await axios.post(WHISPER_API_URL, formData, {
+        headers: {
+          ...formData.getHeaders(),
+          Authorization: `Bearer ${API_KEY}`,
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+        onUploadProgress: (progressEvent) => {
+          console.log(`[${userId}][${requestId}] 上传进度: ${Math.round((progressEvent.loaded * 100) / progressEvent.total)}%`);
+        }
+      });
+
+      console.log(`[${userId}][${requestId}] Whisper API 响应状态:`, response.status);
+      return response.data;
+    } catch (error) {
+      console.error(`[${userId}][${requestId}] Whisper API 调用失败:`, error.message);
+      if (error.response) {
+        console.error(`[${userId}][${requestId}] 响应状态:`, error.response.status);
+        console.error(`[${userId}][${requestId}] 响应数据:`, error.response.data);
+      } else if (error.request) {
+        console.error(`[${userId}][${requestId}] 请求已发送但没有收到响应`);
+        console.error(`[${userId}][${requestId}] 请求详情:`, error.request);
+      } else {
+        console.error(`[${userId}][${requestId}] 请求配置出错:`, error.config);
       }
-    });
-
-    console.log(`[${userId}][${requestId}] Whisper API 响应状态:`, response.status);
-    return response.data;
-  } catch (error) {
-    console.error(`[${userId}][${requestId}] Whisper API 调用失败:`, error.message);
-    if (error.response) {
-      console.error(`[${userId}][${requestId}] 响应状态:`, error.response.status);
-      console.error(`[${userId}][${requestId}] 响应数据:`, error.response.data);
-    } else if (error.request) {
-      console.error(`[${userId}][${requestId}] 请求已发送但没有收到响应`);
-      console.error(`[${userId}][${requestId}] 请求详情:`, error.request);
-    } else {
-      console.error(`[${userId}][${requestId}] 请求配置出错:`, error.config);
+      throw error;
     }
-    throw error;
-  }
+  };
+
+  // 使用 Whisper 限流器包装请求
+  return RateLimiter.openai.whisper(makeWhisperRequest, userId);
 }
 
 function formatSubtitles(whisperOutput) {

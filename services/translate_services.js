@@ -1,7 +1,6 @@
 const axios = require('axios');
 
-const { OPENAI_API_ENDPOINT } = require("../constants");
-const API_KEY = process.env.OPENAI_API_KEY;
+const { callLLM } = require('./llm_service');
 const MAX_CONCURRENT_REQUESTS = 20; // 最大并发请求数
 
 // 内存缓存
@@ -13,37 +12,24 @@ async function translateTextWithGPT(
   videoTitle, 
   videoDescription
 ) {
-  console.log('videoTitle_translate', videoTitle)
-  console.log('videoDescription_translate', videoDescription)
-
   if (translationCache.has(text)) {
     return translationCache.get(text);
   }
 
   try {
-    const response = await axios.post(OPENAI_API_ENDPOINT, {
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system", 
-          content: `You are a translator. You are translating subtitles for a video titled "${videoTitle}". The video description is: "${videoDescription}". Translate the following text to ${targetLanguage}, keeping the context of the video in mind.`
-        },
-        {role: "user", content: text}
-      ],
-      temperature: 0.3,
-    }, {
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json'
-      }
+    const systemPrompt = `You are a translator. You are translating subtitles for a video titled "${videoTitle}". The video description is: "${videoDescription}". Translate the following text to ${targetLanguage}, keeping the context of the video in mind.`;
+
+    const translatedText = await callLLM(text, {
+      model: "gpt-4o-mini",
+      temperature: 0.7,
+      systemPrompt
     });
 
-    const translatedText = response.data.choices[0].message.content.trim();
     translationCache.set(text, translatedText);
-    return translatedText;
+    return translatedText.trim();
   } catch (error) {
-    console.error('翻译出错:', error.response ? error.response.data : error.message);
-    throw new Error(`翻译失败: ${error.response ? JSON.stringify(error.response.data) : error.message}`);
+    console.error('翻译出错:', error.message);
+    throw error;
   }
 }
 

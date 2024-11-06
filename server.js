@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { processVideo } = require("./services/video_processor");
+const { cleanupTempFiles } = require('./services/cleanup_service');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const authMiddleware = require('./middleware/auth');
@@ -49,6 +50,18 @@ app.post("/process-video", authMiddleware, async (req, res) => {
     });
   }
 });
+
+// 服务启动时执行一次清理(之前下载的过期音视频)
+cleanupTempFiles().catch(err => {
+  console.error('启动时清理临时文件失败:', err);
+});
+
+// 每小时执行一次清理(之前下载的过期音视频)
+setInterval(() => {
+  cleanupTempFiles().catch(err => {
+    console.error('定时清理临时文件失败:', err);
+  });
+}, 3600000); // 1小时
 
 //  auth: 注册、登录相关的路由
 app.use('/auth', authRoutes);

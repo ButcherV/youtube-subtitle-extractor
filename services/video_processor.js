@@ -25,6 +25,9 @@ const { translateSubtitles } = require("./translate_services");
 const ProcessedVideo = require('../models/ProcessedVideo');
 
 async function processVideo(videoUrl, targetLanguage = "zh", userId) {
+  // 生成唯一请求ID
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   try {
     const videoId = ytdl.getVideoID(videoUrl);
     
@@ -53,7 +56,7 @@ async function processVideo(videoUrl, targetLanguage = "zh", userId) {
 
     // 03. 使用 Whisper 生成字幕
     console.log("使用 Whisper 生成字幕...");
-    const parsedSubtitles = await generateSubtitlesWithWhisper(videoUrl);
+    const parsedSubtitles = await generateSubtitlesWithWhisper(videoUrl, userId, requestId);
 
     // 04. 提取视频元数据
     const metadata = await extractVideoMetadata(info);

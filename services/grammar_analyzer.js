@@ -45,6 +45,12 @@ async function analyzeGrammar({ text, context = {} }) {
   }
 }
 
+const GRAMMAR_LLM_OPTIONS = {
+  model: "gpt-4o-mini",
+  temperature: 0.7,
+  systemPrompt: "你是一个专业的英语语法分析助手。请按照要求的格式返回分析结果。"
+};
+
 // async function analyzeType(text, context) {
 //   // 1. 先用简单的词数判断（放在最前面）
 //   const wordCount = text.trim().split(/\s+/).length;
@@ -120,7 +126,7 @@ async function analyzeType(text, context) {
 只返回 SENTENCE 或 PHRASE，禁止返回其他内容。
 `;
 
-  const response = await callLLM(prompt);
+  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS);
   const type = response.trim().toUpperCase();
   
   return type === 'SENTENCE' ? 'SENTENCE' : 'PHRASE';
@@ -171,7 +177,7 @@ async function analyzeSentence(text, context) {
   "alternatives": ["相似表达1", "相似表达2"]
 }`;
 
-  const response = await callLLM(prompt);
+  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS);
   console.log('OpenAI API 返回的原始内容:', response);
   return parseOpenAIResponse(response);
 }
@@ -198,7 +204,7 @@ async function analyzePhrase(text, context) {
   "alternatives": ["相似表达1", "相似表达2"]
 }`;
 
-  const response = await callLLM(prompt);
+  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS);;
   console.log('OpenAI API 返回的原始内容:', response);
   return parseOpenAIResponse(response);
 }
@@ -227,7 +233,7 @@ async function analyzeWord(text, context) {
   "etymology": "词源解释"
 }`;
 
-  const response = await callLLM(prompt);
+  const response = await callLLM(prompt, GRAMMAR_LLM_OPTIONS);;
   console.log('OpenAI API 返回的原始内容:', response);
   return parseOpenAIResponse(response);
 }

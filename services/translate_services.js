@@ -9,7 +9,8 @@ async function translateTextWithGPT(
   targetLanguage = 'zh', 
   videoTitle, 
   videoDescription,
-  userId
+  userId,
+  isBatch = false
 ) {
   if (translationCache.has(text)) {
     return translationCache.get(text);
@@ -21,7 +22,8 @@ async function translateTextWithGPT(
     const translatedText = await callLLM(text, {
       model: "gpt-4o-mini",
       temperature: 0.7,
-      systemPrompt
+      systemPrompt,
+      isBatch
     }, userId);
 
     translationCache.set(text, translatedText);
@@ -42,7 +44,8 @@ async function batchTranslate(subtitles, targetLanguage, videoTitle, videoDescri
         targetLanguage, 
         videoTitle, 
         videoDescription, 
-        userId
+        userId,
+        true
       )
         .then(translatedText => ({
           ...subtitle,

@@ -136,15 +136,27 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: ERROR_KEYS.INCORRECT_PASSWORD });
     }
 
+    // 判断是否首次登录
+    const isFirstLogin = !user.lastLoginAt;
+    // 更新最后登录时间
+    user.lastLoginAt = new Date();
+    await user.save();
+
     // 生成 JWT
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '2h' }
     );
 
     // 返回 token
-    res.status(200).json({ success: SUCCESS_KEYS.LOGIN_SUCCESS, token, userId: user._id, email: user.email });
+    res.status(200).json({ 
+      success: SUCCESS_KEYS.LOGIN_SUCCESS, 
+      token, 
+      userId: user._id, 
+      email: user.email,
+      isFirstLogin
+    });
   } catch (error) {
     console.error('登录错误:', error);
     res.status(500).json({ error: ERROR_KEYS.LOGIN_FAILED });

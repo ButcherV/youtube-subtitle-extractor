@@ -9,6 +9,11 @@ const RATE_LIMITS = {
       duration: 60,     // 60 秒为一个周期
       blockDuration: 5  // 超限后封禁 5 秒
     },
+    GPT_BATCH: {
+      points: 300,
+      duration: 60,
+      blockDuration: 5
+    },
     WHISPER: {
       points: 50,       // 所有用户每分钟总共 50 次
       duration: 60,
@@ -20,6 +25,11 @@ const RATE_LIMITS = {
   USER_OPENAI: {
     GPT: {
       points: 10,       // 每用户每分钟 10 次
+      duration: 60,
+      blockDuration: 5
+    },
+    GPT_BATCH: {       // 新增批量任务的用户限流
+      points: 100,       // 允许更多并发
       duration: 60,
       blockDuration: 5
     },
@@ -111,6 +121,7 @@ const RateLimiter = {
   // OpenAI API 限流
   openai: {
     gpt: (fn, userId) => withRateLimit('OPENAI', 'GPT', fn, userId),
+    gpt_batch: (fn, userId) => withRateLimit('OPENAI', 'GPT_BATCH', fn, userId),
     whisper: (fn, userId) => withRateLimit('OPENAI', 'WHISPER', fn, userId)
   },
   

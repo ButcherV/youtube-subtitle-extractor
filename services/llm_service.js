@@ -6,7 +6,8 @@ async function callLLM(prompt, options = {}, userId) {  // [修改] 添加 userI
     model = "gpt-4o-mini",
     temperature = 0.7,
     systemPrompt = "你是一个专业的英语语法分析助手。请按照要求的格式返回分析结果。",
-    retries = 3
+    retries = 3,
+    isBatch = false
   } = options;
 
   const makeRequest = async () => {
@@ -50,8 +51,9 @@ async function callLLM(prompt, options = {}, userId) {  // [修改] 添加 userI
     }
   };
 
-  // 使用限流器包装请求时传入 userId
-  return RateLimiter.openai.gpt(makeRequest, userId);
+  return isBatch 
+    ? RateLimiter.openai.gpt_batch(makeRequest, userId)
+    : RateLimiter.openai.gpt(makeRequest, userId);
 }
 
 module.exports = { callLLM };

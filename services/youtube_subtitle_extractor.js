@@ -1,9 +1,5 @@
 const axios = require("axios");
-const fs = require("fs").promises;
-const path = require("path");
-const os = require("os");
 const { DOMParser } = require("xmldom");
-const crypto = require("crypto");
 
 async function getSubtitles(info) {
   try {

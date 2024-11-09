@@ -21,7 +21,7 @@ const ytdl = require("ytdl-core");
 // const { getSubtitles } = require("./youtube_subtitle_extractor");
 const { generateSubtitlesWithWhisper } = require("./whisper_subtitle_generator");
 const { extractVideoMetadata } = require("./youtube_metadata_extractor");
-const { translateSubtitles } = require("./translate_services");
+const { translateBatch, translateRemaining } = require('./translate_services');
 const ProcessedVideo = require('../models/ProcessedVideo');
 
 async function processVideo(videoUrl, targetLanguage = "zh", userId) {
@@ -59,15 +59,16 @@ async function processVideo(videoUrl, targetLanguage = "zh", userId) {
     const parsedSubtitles = await generateSubtitlesWithWhisper(videoUrl, userId, requestId);
 
     // 04. 提取视频元数据
-    const metadata = await extractVideoMetadata(info);
+    const metadata = await extractVideoMetadata(videoUrl);
 
-    // 05. 翻译字幕
-    const translatedSubtitles = await translateSubtitles(
-      parsedSubtitles,
+    // 05. 先翻译前 5 条字幕
+    const firstBatch = parsedSubtitles.slice(0, 5);
+    const translatedFirstBatch = await translateBatch(
+      firstBatch,
       targetLanguage,
       metadata.videoTitle,
       metadata.videoDescription,
-      userId,
+      userId
     );
 
     // 06. 汇总、返回结果
@@ -77,11 +78,25 @@ async function processVideo(videoUrl, targetLanguage = "zh", userId) {
         videoDescription: metadata.videoDescription,
         videoDuration: metadata.videoDuration,
       },
-      subtitles: translatedSubtitles,
+      subtitles: [
+        ...translatedFirstBatch,
+        ...parsedSubtitles.slice(5).map(s => ({
+          ...s,
+          translatedText: ''
+        }))
+      ],
     };
 
-    // 将处理结果存储到数据库
-    await ProcessedVideo.create({ userId, videoId, data: result });
+    // 07. 保存初始结果到数据库
+    const processedVideo = await ProcessedVideo.create({ 
+      userId, 
+      videoId, 
+      status: 'processing',
+      data: result 
+    });
+
+    // 08. 启动后台翻译
+    translateRemaining(processedVideo._id, parsedSubtitles.slice(5), targetLanguage, metadata, userId);
 
     return result;
   } catch (error) {

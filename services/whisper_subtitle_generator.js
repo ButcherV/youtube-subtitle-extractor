@@ -169,8 +169,15 @@ async function transcribeAudio(audioFilePath, userId, requestId) {
     formData.append("response_format", "verbose_json");
     formData.append("timestamp_granularities[]", "segment");
 
+    // 优化断句
+    formData.append("language", "en");
+    formData.append("temperature", "0");
+    // 限制每段长度
+    formData.append("prompt", "Transcribe this English video. Break at natural pauses. Keep each segment between 5-20 words.");
+
     try {
       console.log(`[${userId}][${requestId}] 发送请求到 Whisper API`);
+      console.log(`[${userId}][${requestId}] 等待 Whisper API 响应...`);
       
       const response = await axios.post(WHISPER_API_URL, formData, {
         headers: {
@@ -179,12 +186,15 @@ async function transcribeAudio(audioFilePath, userId, requestId) {
         },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
+        timeout: 300000,  // 设置 5 分钟超时
         onUploadProgress: (progressEvent) => {
           console.log(`[${userId}][${requestId}] 上传进度: ${Math.round((progressEvent.loaded * 100) / progressEvent.total)}%`);
         }
       });
 
+      console.log(`[${userId}][${requestId}] Whisper API 响应接收成功`);
       console.log(`[${userId}][${requestId}] Whisper API 响应状态:`, response.status);
+      console.log(`[${userId}][${requestId}] Whisper API 响应数据:`, JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error) {
       console.error(`[${userId}][${requestId}] Whisper API 调用失败:`, error.message);
@@ -198,6 +208,10 @@ async function transcribeAudio(audioFilePath, userId, requestId) {
         console.error(`[${userId}][${requestId}] 请求配置出错:`, error.config);
       }
       throw error;
+    } finally {
+      // 关闭文件流
+      audioFile.destroy();
+      console.log(`[${userId}][${requestId}] 音频文件流已关闭`);
     }
   };
 

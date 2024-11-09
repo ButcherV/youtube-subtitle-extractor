@@ -10,8 +10,8 @@ const RATE_LIMITS = {
       blockDuration: 5  // 超限后封禁 5 秒
     },
     GPT_BATCH: {
-      points: 300,
-      duration: 60,
+      points: 400,
+      duration: 30,
       blockDuration: 5
     },
     WHISPER: {
@@ -29,8 +29,8 @@ const RATE_LIMITS = {
       blockDuration: 5
     },
     GPT_BATCH: {       // 新增批量任务的用户限流
-      points: 100,       // 允许更多并发
-      duration: 60,
+      points: 200,       // 允许更多并发
+      duration: 30,
       blockDuration: 5
     },
     WHISPER: {
@@ -48,12 +48,12 @@ const RATE_LIMITS = {
       blockDuration: 5
     },
     SENSITIVE: {       // 敏感接口（如登录）
-      points: 10,      // 每用户每分钟 10 次
+      points: 20, 
       duration: 60,
       blockDuration: 30
     },
     RESOURCE: {        // 资源密集型（如视频处理）
-      points: 5,       // 每用户每分钟 5 次
+      points: 10,
       duration: 60,
       blockDuration: 10
     }

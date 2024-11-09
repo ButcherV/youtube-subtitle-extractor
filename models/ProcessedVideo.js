@@ -3,6 +3,11 @@ const mongoose = require("mongoose");
 const ProcessedVideoSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   videoId: { type: String, required: true },
+  status: {
+    type: String,
+    enum: ['processing', 'completed', 'error'],
+    default: 'processing'
+  },
   data: { type: Object, required: true },
   createdAt: { type: Date, default: Date.now },
 });

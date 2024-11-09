@@ -2,9 +2,9 @@ const RateLimiter = require("../services/rate_limiter");
 
 // 创建不同类型的限流中间件
 const createLimiter = (type) => async (req, res, next) => {
+  const userId = req.user?.userId || req.ip;  // 已登录用户用 userId，未登录用户用 IP
+
   try {
-    const userId = req.user?.userId || req.ip;  // 已登录用户用 userId，未登录用户用 IP
-    
     await RateLimiter.api[type](async () => {
       return true;  // 只是检查限流，不做任何事
     }, userId);

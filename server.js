@@ -12,6 +12,9 @@ const grammarRoutes = require('./routes/grammar');
 const wordcardRoutes = require('./routes/wordcard');
 const videoRoutes = require('./routes/video-check');
 
+// 在文件最开始添加
+process.env.YTDL_NO_UPDATE = 'true';
+
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGODB_URI)
 .then(() => console.log('Connected to MongoDB'))
@@ -28,19 +31,34 @@ app.use(cors());
 // 不传参：返回用户所有处理过的视频的 meta/subtitles
 // 使用资源密集型限流
 app.post("/process-video", authMiddleware, resourceLimiter, async (req, res) => {
-  const { videoUrl, targetLanguage = "zh" } = req.body;
+  const { videoUrl, videoId, targetLanguage = "zh" } = req.body;
   const userId = req.user.userId;
 
   try {
-    if (!videoUrl) {
-      const processedVideos = await ProcessedVideo.find({ userId })
-        .sort({ createdAt: -1 })
-        .limit(20)
-      return res.json(processedVideos);
+    // 场景1：添加新视频
+    if (videoUrl) {
+      const result = await processVideo(videoUrl, targetLanguage, userId);
+      return res.json(result);
+    }
+    
+    // 场景2：轮询特定视频的翻译状态
+    if (videoId) {
+      const video = await ProcessedVideo.findOne({ userId, videoId });
+      if (!video) {
+        return res.status(404).json({ error: 'Video not found' });
+      }
+      return res.json({
+        ...video.data,
+        status: video.status
+      });
     }
 
-    const result = await processVideo(videoUrl, targetLanguage, userId);
-    res.json(result);
+    // 场景3：获取视频列表（不传任何参数）
+    const processedVideos = await ProcessedVideo.find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(20);
+    return res.json(processedVideos);
+
   } catch (error) {
     console.error("处理视频时出错:", error.message);
     res.status(400).json({ 
